@@ -17,11 +17,11 @@ exports.console = function () {
         } catch (e) {
             that.detected.wonderfulOutput = 0;
         }
-    }    
+    }
     this.debug = this.libs.console.debug;
-    this.detected  = {
-        wonderfulOutput:0
-    };    
+    this.detected = {
+        wonderfulOutput: 0
+    };
     this.dir = this.libs.console.dir;
     this.dirxml = this.libs.console.dirxml;
     this.expection = this.libs.console.expection;
@@ -35,8 +35,24 @@ exports.console = function () {
     this.trace = this.libs.console.trace;
     this.cacheCount = {};
     this.countNumber = 0;
-    this.history = [];
-    this.historyPosition = 0;
+    this.history = {
+        list: [],
+        position: 0,
+        add: function (list) {
+
+            if (Object.prototype.toString.call(list) === '[object Array]') {
+                that.history.list = [];
+                for (var i = 0; list.length > i; i++)
+                    if ((that.history.list.length < 1) || (list[i] !== that.history.list[that.history.list.length - 1]))
+                        that.history.list.push(list[i]);
+            } else if (typeof list === "string") {
+                if ((that.history.list.length < 1) || (list !== that.history.list[that.history.list.length - 1]))
+                    that.history.list.push(list);
+            }
+            that.history.position = that.history.list.length;
+            return true;
+        }
+    }
     this.icons = {
         log: "\u27e1",
         warn: "\u26a0",
@@ -44,14 +60,14 @@ exports.console = function () {
         error: "\u26a1",
         time: "\u25f4"
     },
-    this.writeStream={
-        write:function(haleluja){
-            return false;
-        }
-    }
-    this.writeInit=function(){
-        this.writeStream=this.libs.fs.createWriteStream(this.config.log.directory+this.config.log.fileName, { 'flags': 'a'});
-        this.config.log.write=1;
+            this.writeStream = {
+                write: function (haleluja) {
+                    return false;
+                }
+            }
+    this.writeInit = function () {
+        this.writeStream = this.libs.fs.createWriteStream(this.config.log.directory + this.config.log.fileName, {'flags': 'a'});
+        this.config.log.write = 1;
     };
     this.config = {
         icon: 0,
@@ -67,7 +83,7 @@ exports.console = function () {
         hostname: 0,
         host: "localhost",
         limitation: "none", // none, safe, number, calculator
-        wonderfulOutput:1, 
+        wonderfulOutput: 1,
         limits: {
             safe: "QWERTYUIOOOOPASDFGHJKL\ZXCVBNM qwertyuiopasdfghjklzxcvbnm`1234567890_-+={[}]:;@'~#!" + '"' + "£$%^&*()æßðđŋħĸµn¢»«|\\/?><,.€½³²¹½¾¢|«»nµłĸŋđðßæ@łe¶ŧ←↓→øþ·̣|¬*",
             number: "0123456789",
@@ -167,7 +183,6 @@ exports.console = function () {
         text = text.slice(0, last) + text.slice(last).replace("\u001b[0m", "\u001b[0m" + style + "m");
         return style + "m" + text + "\u001b[0m";
     }
-    this.lineText = "";
     this.watchOn = 0;
     this.yes = function () {};
     this.no = function () {};
@@ -241,14 +256,16 @@ exports.console = function () {
                 return that.style(text.toString(), that.config.styles[type]);
             return text.toString();
         },
-        formater: function(text){
-                if ((that.detected.wonderfulOutput === 1)&&(that.config.wonderfulOutput === 1)){
-                    if (typeof text === "object") return that.libs.wonderfulOutput.json(text);
-                    return text;
-                } else {
-                    if (typeof text === "object") return JSON.stringify(text);
-                    return text;
-                }
+        formater: function (text) {
+            if ((that.detected.wonderfulOutput === 1) && (that.config.wonderfulOutput === 1)) {
+                if (typeof text === "object")
+                    return that.libs.wonderfulOutput.json(text);
+                return text;
+            } else {
+                if (typeof text === "object")
+                    return JSON.stringify(text);
+                return text;
+            }
         },
         add: function (text, type) {
             var stamp = +new Date;
@@ -273,19 +290,19 @@ exports.console = function () {
                     text: text
                 });
             }
-            that.textMaker.file(that.countNumber.toString(),that.config.host,stamp,type,text);
+            that.textMaker.file(that.countNumber.toString(), that.config.host, stamp, type, text);
             that.cacheAdd(that.countNumber, that.config.host, text, type, stamp);
             return out;
         },
-        file:function(count, host, stamp, type, text){
-            if(that.config.log.write === 1){
+        file: function (count, host, stamp, type, text) {
+            if (that.config.log.write === 1) {
                 that.writeStream.write(JSON.stringify({
                     count: count,
                     hostname: host,
                     timeStamp: stamp,
                     type: type,
                     text: text
-                })+"\n");
+                }) + "\n");
             }
         },
         re: function (count, hostname, text, type, stamp) {
@@ -314,7 +331,7 @@ exports.console = function () {
             var stamp = +new Date;
             that.countNumber++;
             if (that.config.format === "text") {
-                text = that.textMaker.formater(text);                
+                text = that.textMaker.formater(text);
                 text = that.textMaker.text(type, text);
                 text = that.textMaker.title(type) + text;
                 text = that.textMaker.icon(type) + text;
@@ -600,28 +617,175 @@ exports.console = function () {
     this.on = function (incomming) {
         return false;
     }
+    this.line = {
+        last: "",
+        text: "",
+    }
     this.newLine = function () {
         process.stdout.write("\n");
         that.cursorPosition = 0;
-        that.lineText = "";
+        that.line.text = "";
     }
     this.makePrompt = function () {
         process.stdout.cursorTo(0);
         process.stdout.clearLine();
         if (this.config.mode === "hidden") {
-            process.stdout.write(this.cursorText);
+            process.stdout.write(that.cursorText);
             return true;
         } else if (this.config.mode === "password") {
-            process.stdout.write(this.cursorText + (function () {
+            process.stdout.write(that.cursorText + (function () {
                 var out = "";
-                for (var ri = 0; that.lineText.length > ri; ri++)
+                for (var ri = 0; that.line.text.length > ri; ri++)
                     out += "*";
                 return out;
             })());
         } else {
-            process.stdout.write(this.cursorText + this.lineText);
+            process.stdout.write(that.cursorText + this.line.text);
         }
         process.stdout.cursorTo(this.cursorPosition + this.cursorText.length);
+    }
+    this.password = {
+        on: function (password) {
+            return false;
+        },
+        last: "none",
+        inAction: 0,
+        action(fun, action) {
+            if (typeof fun === "undefined")
+                return false;
+            if (typeof action === "undefined")
+                action = 1;
+            that.password.inAction = action;
+            that.password.last = that.config.limitation;
+            that.config.limitation = "password";
+        },
+        doAction: function () {
+            that.password.on(that.line.text)
+            that.password.inAction--;
+            if (that.password.inAction === 0)
+                that.config.limitation = that.password.last;
+        }
+    }
+    this.number = {
+        on: function (number) {
+            return false;
+        },
+        last: "none",
+        inAction: 0,
+        action(fun, action) {
+            if (typeof fun === "undefined")
+                return false;
+            if (typeof action === "undefined")
+                action = 1;
+            that.number.inAction = action;
+            that.number.last = that.config.limitation;
+            that.config.limitation = "number";
+        },
+        doAction: function () {
+            that.number.on(that.line.text)
+            that.number.inAction--;
+            if (that.number.inAction === 0)
+                that.config.limitation = that.number.last;
+        }
+    }
+    this.calculator = {
+        on: function (calculator) {
+            return false;
+        },
+        last: "none",
+        inAction: 0,
+        action(fun, action) {
+            if (typeof fun === "undefined")
+                return false;
+            if (typeof action === "undefined")
+                action = 1;
+            that.calculator.inAction = action;
+            that.calculator.last = that.config.limitation;
+            that.calculator.limitation = "calculator";
+        },
+        doAction: function () {
+            that.calcularor.on(that.line.text)
+            that.calculator.inAction--;
+            if (that.calculator.inAction === 0)
+                that.config.limitation = that.calculator.last;
+        }
+    }
+    this.direct = {
+        on: function (direct) {
+            return false;
+        },
+        last: "none",
+        inAction: 0,
+        action(fun, action) {
+            if (typeof fun === "undefined")
+                return false;
+            if (typeof action === "undefined")
+                action = 1;
+            that.direct.inAction = action;
+            that.direct.last = that.config.limitation;
+            that.direct.limitation = "direct";
+        },
+        doAction: function (key) {
+            that.direct.on(key)
+            that.direct.inAction--;
+            if (that.direct.inAction === 0)
+                that.config.limitation = that.direct.last;
+        }
+    }
+    this.command = {
+        on: function (commandArray) {
+            return false;
+        },
+        commander: function (command) {
+
+            var commandArray = that.command.separator(command);
+            for (var i = 0; commandArray.length > i; i++) {
+                that.command.on(commandArray[i]);
+            }
+        },
+        separator: function (command) {
+            command = command.toString().replace(/(?:(?:^|\n)\s+|\s+(?:$|\n))/g, '').replace(/\s+/g, ' ');
+            var commands = [];
+            var commandi = 0;
+            var commandit = 0;
+            var mod = 0;
+            var modSelector = "";
+            for (var i = 0; command.length > i; i++) {
+                if (typeof commands[commandi] === "undefined")
+                    commands[commandi] = [];
+                if (typeof commands[commandi][commandit] === "undefined")
+                    commands[commandi][commandit] = "";
+                if (mod === 0) {
+                    if (command.charAt(i) === ";") {
+                        commandi++;
+                        commandit = 0;
+                    } else if (command.charAt(i) === '\\') {
+                        mod = 2;
+                    } else if (command.charAt(i) === "'") {
+                        mod = 1;
+                        modSelector = "'";
+                    } else if (command.charAt(i) === '"') {
+                        mod = 1;
+                        modSelector = '"';
+                    } else if ((command.charAt(i) === ' ') || (command.charAt(i) === "\t")) {
+                        if ((i > 0) && (command.charAt(i - 1) !== " ") && (command.charAt(i - 1) !== "\t") && (command.charAt(i - 1) !== ";") && (command.charAt(i - 1) !== "'") && (command.charAt(i - 1) !== '"'))
+                            commandit++;
+                    } else {
+                        commands[commandi][commandit] += command.charAt(i);
+                    }
+                } else if (mod === 1) {
+                    if (command.charAt(i) === modSelector) {
+                        mod = 0;
+                    } else {
+                        commands[commandi][commandit] += command.charAt(i);
+                    }
+                } else if (mod === 2) {
+                    commands[commandi][commandit] += command.charAt(i);
+                    mod = 0;
+                }
+            }
+            return commands;
+        }
     }
     this.watch = function () {
         this.watchOn = 1;
@@ -648,52 +812,72 @@ exports.console = function () {
             } else {
                 if (key === '\u0003') {
                     that.exit();
+                } else if ((that.config.limitation === "direct")) {
+                    if (that.direct.inAction === 0) {
+                        that.on(key);
+                    } else {
+                        that.direct.doAction(key);
+                    }
                 } else if (key === '\u000D') {
-                    if (that.lineText.length > 0) {
-                        if (["q", "quit", "e", "exit"].indexOf(that.lineText) > -1) {
+                    if (that.line.text.length > 0) {
+                        if (["q", "quit", "e", "exit"].indexOf(that.line.text) > -1) {
                             that.exit();
                         } else {
                             process.stdout.write("\n");
-                            that.on(that.lineText);
-                            if ((that.history.length < 1) || (that.lineText !== that.history[that.history.length - 1]))
-                                that.history.push(that.lineText);
-                            that.lineText="";
+                            if ((that.config.limitation !== "password") || (that.config.limitation !== "calculator") || (that.config.limitation !== "number")) {
+                                that.history.add(that.line.text);
+                                that.on(that.line.text);
+                                that.command.commander(that.line.text);
+                            }
+                            if ((that.config.limitation === "password") || (that.config.limitation === "calculator") || (that.config.limitation === "number")) {
+                                if (that[that.config.limitation].inAction === 0) {
+                                    that.on(that.line.text);
+                                } else {
+                                    that[that.config.limitation].doAction();
+                                }
+                            }
+                            that.line.text = "";
+                            that.line.last = "";
                             that.cursorPosition = 0;
-                            that.makePrompt();                              
-                            that.historyPosition = that.history.length;
+                            that.makePrompt();
                         }
                     }
                 } else if ((key === '\u0008') || (key.charCodeAt(0) === 127)) {
                     if (that.cursorPosition > 0) {
-                        that.lineText = that.lineText.substr(0, parseInt(that.cursorPosition - 1)) + that.lineText.substr(parseInt(that.cursorPosition), that.lineText.length);
+                        that.line.text = that.line.text.substr(0, parseInt(that.cursorPosition - 1)) + that.line.text.substr(parseInt(that.cursorPosition), that.line.text.length);
                         that.cursorPosition--;
                         that.makePrompt();
                     }
                 } else if ((key === '\u001b[3~')) {
-                    if (that.lineText.length>that.cursorPosition) {
-                        that.lineText = that.lineText.substr(0, parseInt(that.cursorPosition)) + that.lineText.substr(parseInt(that.cursorPosition+1), that.lineText.length);
+                    if (that.line.text.length > that.cursorPosition) {
+                        that.line.text = that.line.text.substr(0, parseInt(that.cursorPosition)) + that.line.text.substr(parseInt(that.cursorPosition + 1), that.line.text.length);
                         that.makePrompt();
                     }
-                } else if (key === '\u001b[A') {
-                    if (that.historyPosition > 0) {
-                        that.historyPosition--;
-                        that.lineText = that.history[that.historyPosition];
-                        that.cursorPosition = that.lineText.length;
+                } else if ((key === '\u001b[A') && ((that.config.limitation !== "password") || (that.config.limitation !== "calculator") || (that.config.limitation !== "number"))) {
+                    if (that.history.position > 0) {
+                        that.history.position--;
+                        that.line.text = that.history.list[that.history.position];
+                        that.cursorPosition = that.line.text.length;
                         that.makePrompt();
                     }
-                } else if (key === '\u001b[B') {
-                    if (that.history.length > that.historyPosition + 1) {
-                        that.historyPosition++;
-                        that.lineText = that.history[that.historyPosition];
-                        that.cursorPosition = that.lineText.length;
+                } else if ((key === '\u001b[B') && ((that.config.limitation !== "password") || (that.config.limitation !== "calculator") || (that.config.limitation !== "number"))) {
+                    if (that.history.list.length > that.history.position + 1) {
+                        that.history.position++;
+                        that.line.text = that.history.list[that.history.position];
+                        that.cursorPosition = that.line.text.length;
+                        that.makePrompt();
+                    } else if (that.history.list.length === that.history.position + 1) {
+                        that.history.position++;
+                        that.line.text = that.line.last;
+                        that.cursorPosition = that.line.text.length;
                         that.makePrompt();
                     }
 
-                } else if ((key === '\u001b[C') || (key == '\u001B\u005B\u0043')) {
-                    if (that.lineText.length > that.cursorPosition)
+                } else if (((key === '\u001b[C') || (key == '\u001B\u005B\u0043')) && (that.config.limitation !== "password")) {
+                    if (that.line.text.length > that.cursorPosition)
                         that.cursorPosition++;
                     that.makePrompt();
-                } else if ((key === '\u001b[D') || (key == '\u001B\u005B\u0044')) {
+                } else if (((key === '\u001b[D') || (key == '\u001B\u005B\u0044')) && (that.config.limitation !== "password")) {
                     if (that.cursorPosition > 0)
                         that.cursorPosition--;
                     that.makePrompt();
@@ -703,11 +887,12 @@ exports.console = function () {
                             ((that.config.limitation === "number") && (that.config.limits.number.indexOf(key.toString()) > -1)) ||
                             ((that.config.limitation === "calculator") && (that.config.limits.calculator.indexOf(key.toString()) > -1))
                             ) {
-                        if (that.lineText.length > 0) {
-                            that.lineText = that.lineText.substr(0, parseInt(that.cursorPosition)) + key.toString() + that.lineText.substr(parseInt(that.cursorPosition), that.lineText.length);
+                        if (that.line.text.length > 0) {
+                            that.line.text = that.line.text.substr(0, parseInt(that.cursorPosition)) + key.toString() + that.line.text.substr(parseInt(that.cursorPosition), that.line.text.length);
                         } else {
-                            that.lineText = key.toString();
+                            that.line.text = key.toString();
                         }
+                        that.line.last = that.line.text;
                         that.cursorPosition++;
                         that.makePrompt();
                     }
@@ -717,7 +902,6 @@ exports.console = function () {
     }
     var that = this;
     this.check();
-    
 };
 
 
