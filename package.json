@@ -1,6 +1,6 @@
 {
   "name": "interactiveConsole",
-  "version": "0.0.4r5",
+  "version": "0.0.5r1",
   "description": "simple fast utf-8 console/shell",
   "main": "index.js",
   "scripts": {

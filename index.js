@@ -3,6 +3,13 @@
 
 exports.console = function () {
     this.howami = "interactiveConsole";
+    this.whoami = {
+        name:"interactiveConsole",
+        version:"0.0.5r1",
+        get:function(){
+            return that.whoami.name + " " + that.whoami.version;
+        }
+    }
     this.libs = {
         console: require('console').Console,
         fs: require('fs'),
