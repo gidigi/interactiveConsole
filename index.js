@@ -3,13 +3,6 @@
 
 exports.console = function () {
     this.howami = "interactiveConsole";
-    this.whoami = {
-        name:"interactiveConsole",
-        version:"0.0.5r1",
-        get:function(){
-            return that.whoami.name + " " + that.whoami.version;
-        }
-    }
     this.libs = {
         console: require('console').Console,
         fs: require('fs'),
@@ -628,12 +621,30 @@ exports.console = function () {
         last: "",
         text: "",
     }
+    this.cursor = {
+        up: function (line) {
+            process.stdout.write("\u001b[" + line + "A");
+        },
+        down: function (line) {
+            process.stdout.write("\u001b[" + line + "B");
+        },
+        left: function (left) {
+            process.stdout.write("\u001b[" + left + "D");
+        },
+        right: function (right) {
+            process.stdout.write("\u001b[" + right + "C");
+        }
+    }
     this.newLine = function () {
         process.stdout.write("\n");
         that.cursorPosition = 0;
         that.line.text = "";
     }
     this.makePrompt = function () {
+        process.stdout.write("\n");
+        process.stdout.clearLine();
+        process.stdout.write(that.command.watch());
+        that.cursor.up(1);
         process.stdout.cursorTo(0);
         process.stdout.clearLine();
         if (this.config.mode === "hidden") {
@@ -740,6 +751,10 @@ exports.console = function () {
         }
     }
     this.command = {
+        container: {
+            helper: {},
+            commands: {}
+        },
         on: function (commandArray) {
             return false;
         },
@@ -748,6 +763,9 @@ exports.console = function () {
             var commandArray = that.command.separator(command);
             for (var i = 0; commandArray.length > i; i++) {
                 that.command.on(commandArray[i]);
+                if (typeof that.command.container.commands[commandArray[i][0]] !== "undefined") {
+                    that.printLn(that.command.container.commands[commandArray[i][0]](commandArray[i]));
+                }
             }
         },
         separator: function (command) {
@@ -792,10 +810,72 @@ exports.console = function () {
                 }
             }
             return commands;
+        },
+        looking: function (input) {
+            var separated = that.command.separator(input),
+                    tags = that.command.container.helper,
+                    out = [];
+            separated = separated[separated.length - 1];
+            if (typeof separated === "undefined")
+                return false;
+            for (var i = 0; separated.length > i; i++) {
+                if (i !== separated.length - 1) {
+                    if (typeof tags[separated[i]] === "undefined")
+                        return false;
+                    tags = tags[separated[i]];
+                } else {
+                    out = that.command.filter(tags, separated[i]);
+                }
+            }
+            return out;
+        },
+        filter: function (tags, separated) {
+            var out = [];
+            if (separated === "") {
+                for (var I in tags)
+                    out.push(I);
+            } else {
+                for (var I in tags)
+                    if (I.indexOf(separated) == 0)
+                        out.push(I);
+            }
+            return out;
+        },
+        add: function (command, functio, help) {
+
+
+            if (Object.prototype.toString.call(command) === '[object Array]') {
+                for (var i = 0; command.length > i; i++)
+                    that.command.addOne(command[i], functio, help);
+            } else if (typeof command === "string") {
+                that.command.addOne(command, functio, help);
+            }
+        },
+        addOne: function (command, functio, help) {
+            if (typeof that.command.container.commands[command] !== "undefined")
+                return false;
+            that.command.container.commands[command] = functio;
+            if (typeof help === "undefined")
+                help = {};
+            that.command.container.helper[command] = help;
+        },
+        make: function (input) {
+            var out = "",
+                    elementsNumber = 0;
+            for (var i in input) {
+                if (elementsNumber < 6)
+                    out += input[i] + ' ';
+            }
+            return out;
+        },
+        watch: function () {
+            if (that.line.text === "")
+                return "";
+            return that.command.make(that.command.looking(that.line.text));
         }
     }
     this.watch = function () {
-        this.watchOn = 1;
+        that.watchOn = 1;
         process.stdin.setRawMode(true);
         process.stdin.resume();
         process.stdin.setEncoding('utf8');
