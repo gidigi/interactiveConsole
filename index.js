@@ -668,7 +668,7 @@ exports.console = function () {
         },
         last: "none",
         inAction: 0,
-        action(fun, action) {
+        action:function(fun, action) {
             if (typeof fun === "undefined")
                 return false;
             if (typeof action === "undefined")
@@ -690,7 +690,7 @@ exports.console = function () {
         },
         last: "none",
         inAction: 0,
-        action(fun, action) {
+        action:function(fun, action) {
             if (typeof fun === "undefined")
                 return false;
             if (typeof action === "undefined")
@@ -712,7 +712,7 @@ exports.console = function () {
         },
         last: "none",
         inAction: 0,
-        action(fun, action) {
+        action:function(fun, action) {
             if (typeof fun === "undefined")
                 return false;
             if (typeof action === "undefined")
@@ -734,7 +734,7 @@ exports.console = function () {
         },
         last: "none",
         inAction: 0,
-        action(fun, action) {
+        action:function(fun, action) {
             if (typeof fun === "undefined")
                 return false;
             if (typeof action === "undefined")
